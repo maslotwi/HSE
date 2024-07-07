@@ -1,0 +1,41 @@
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 0.5em;
+}
+
+th {
+    text-align: center;
+}
+
+.levelEdit {
+    width: 2em;
+}
+
+.player1 {
+    background-color: red;
+}
+.player2 {
+    background-color: blue;
+}
+.player3 {
+    background-color: tan;
+}
+.player4 {
+    background-color: green;
+}
+.player5 {
+    background-color: orange;
+}
+.player6 {
+    background-color: purple;
+}
+.player7 {
+    background-color: teal;
+}
+.player8 {
+    background-color: pink;
+}
+.player256 {
+    background-color: white;
+}
