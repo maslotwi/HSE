@@ -185,3 +185,7 @@ fabric.properties
 .idea
 
 # this project
+/test.bin
+/test.c
+/test.exe
+/offsets
