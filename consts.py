@@ -228,9 +228,17 @@ skill_ids = {
     'Wisdom': 7,
 }
 
+hero_ids = ('Orrin', 'Valeska', 'Edric', 'Sylvia', 'Lord Haart', 'Sorsha', 'Christian', 'Tyris', 'Rion', 'Adela', 'Cuthbert', 'Adelaide', 'Ingham', 'Sanya', 'Loynis', 'Caitlin', 'Mephala', 'Ufretin', 'Jenova', 'Ryland', 'Thorgrim', 'Ivor', 'Clancy', 'Kyrre', 'Coronius', 'Uland', 'Elleshar', 'Gem', 'Malcom', 'Melodia', 'Alagar', 'Aeris', 'Piquedram', 'Thane', 'Josephine', 'Neela', 'Torosar ', 'Fafner', 'Rissa', 'Iona', 'Astral', 'Halon', 'Serena', 'Daremyth', 'Theodorus', 'Solmyr', 'Cyra', 'Aine', 'Fiona', 'Rashka', 'Marius', 'Ignatius', 'Octavia', 'Calh', 'Pyre', 'Nymus', 'Ayden', 'Xyron', 'Axsis', 'Olema', 'Calid', 'Ash', 'Zydar', 'Xarfax', 'Straker', 'Vokial', 'Moandor', 'Charna', 'Tamika', 'Isra', 'Clavius', 'Galthran', 'Septienna', 'Aislinn', 'Sandro', 'Nimbus', 'Thant', 'Xsi', 'Vidomina', 'Nagash', 'Lorelei', 'Arlach', 'Dace', 'Ajit', 'Damacon', 'Gunnar', 'Synca', 'Shakti', 'Alamar', 'Jaegar', 'Malekith', 'Jeddite', 'Geon', 'Deemer', 'Sephinroth', 'Darkstorn', 'Yog', 'Gurnisson', 'Jabarkas', 'Shiva', 'Gretchin', 'Krellion', 'Crag Hack', 'Tyraxor', 'Gird', 'Vey', 'Dessa', 'Terek', 'Zubin', 'Gundula', 'Oris', 'Saurug', 'Bron', 'Drakon', 'Wystan', 'Tazar', 'Alkin', 'Korbac', 'Gerwulf', 'Broghild', 'Mirlanda', 'Rosic', 'Voy', 'Verdish', 'Merist', 'Styg', 'Andra', 'Tiva', 'Pasis', 'Thunar', 'Ignissa', 'Lacus', 'Monere', 'Erdamon', 'Fiur', 'Kalt', 'Luna', 'Brissa', 'Ciele', 'Labetha', 'Inteus', 'Aenain', 'Gelare', 'Grindan', 'Sir Mullich', 'Adrienne', 'Catherine', 'Dracon', 'Gelu', 'Kilgor', 'Haart Lich', 'Mutare', 'Roland', 'Mutare Drake', 'Boragus', 'Xeron', 'Corkes', 'Jeremy', 'Illor', 'Derek', 'Leena', 'Anabel', 'Cassiopeia', 'Miriam', 'Casmetra', 'Eovacius', 'Spint', 'Andal', 'Manfred', 'Zilare', 'Astra', 'Dargem', 'Bidley', 'Tark', 'Elmore', 'Beatrice', 'Kinkeria', 'Ranloo', 'Giselle', 'Henrietta', 'Sam', 'Tancred', 'Melchior', 'Floribert', 'Wynona', 'Dury', 'Morton', 'Celestine', 'Todd', 'Agar', 'Bertram', 'Wrathmont', 'Ziph', 'Victoria', 'Eanswythe', 'Frederick', 'Tavin', 'Murdoch')
+
 skill_names = {y: x for x, y in skill_ids.items()}
 
 secondary_skill_count = 222
 secondary_skills = 166
 affiliation = -1
+
+player_color = -204
+player_hero_count = player_color + 1
+player_heroes = player_color + 8
+player_resources = -48
+
 

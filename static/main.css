@@ -13,28 +13,53 @@ th {
 }
 
 .player1 {
-    background-color: red;
+    background-color: #b10009;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
+
 }
 .player2 {
-    background-color: blue;
+    background-color: #243b7e;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player3 {
-    background-color: tan;
+    background-color: #ae845a;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player4 {
-    background-color: green;
+    background-color: #338727;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player5 {
-    background-color: orange;
+    background-color: #e26b19;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player6 {
-    background-color: purple;
+    background-color: #761a99;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player7 {
-    background-color: teal;
+    background-color: #31787a;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player8 {
-    background-color: pink;
+    background-color: #b86d82;
+    color: white;
+    text-shadow: 1px 1px 0 #000;
+    text-decoration: none;
 }
 .player256 {
     background-color: white;
