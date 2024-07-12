@@ -14,7 +14,7 @@ def skills_html(name):
         dropdown_options += f"<option value='{i}'>{i}</option>"
 
     table = [
-        f"<td><select autocomplete='off' id='slot{i + 1}'>{dropdown_options}</select><input class='levelEdit' autocomplete='off' min='0' max='3' type='number' value='0' id='level{i + 1}'></input></td>"
+        f"<td colspan='2'><select autocomplete='off' id='slot{i + 1}'>{dropdown_options}</select><input class='levelEdit' autocomplete='off' min='0' max='3' type='number' value='0' id='level{i + 1}'></input></td>"
         for i in range(8)]
 
     for skill in skills:
