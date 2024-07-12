@@ -5,6 +5,7 @@ from os.path import join
 from re import search, MULTILINE, finditer, DOTALL
 from typing import List
 from array import array
+from threading import Lock
 
 
 class ProcessNotFound(Exception):
@@ -37,15 +38,19 @@ class H3editor:
 
     def __init__(self, process_name="h3hota HD.exe"):
         self.process_name = process_name
+        self.rw_lock = Lock()
         self.PID = None
         self.memory_file = None
         self.mem_locations = None
-        self.get_PID()
+        self.reload()
 
+    def reload(self):
+        self.get_PID()
         if self.PID is not None:
             self.open_memory_file()
-            self.get_hero_locations()
-            self.get_player_locations('Player2', 'Computer')
+            with self.rw_lock:
+                self.get_hero_locations()
+                self.get_player_locations('Player2', 'Computer')
 
     def __del__(self):
         if self.memory_file is not None:
@@ -80,32 +85,39 @@ class H3editor:
                     self.memory_file.seek(heap_start)
                     mem = self.memory_file.read(heap_end - heap_start)
                     if search(f'({second_to_last})|({last})'.encode(), mem, flags=MULTILINE | DOTALL):
-                        for i in finditer(f"((?<=({second_to_last}).{{{360-len(second_to_last)}}}){last})".encode(), mem,
+                        for i in finditer(f"((?<=({second_to_last}).{{{360-len(second_to_last)+consts.player_color}}}(.).{{{-1-consts.player_color}}})({last}))".encode(), mem,
                                           flags=MULTILINE | DOTALL):
+                            color = i.groups()[2][0]
                             last_player = i.start()+heap_start
-                            print(last_player)
 
                 except IOError:
                     continue
-        self.players_array = last_player - 7 * 360
+        self.players_array = last_player - color * 360
 
     def get_player(self, color: int):
-        self.memory_file.seek(self.players_array + consts.player_heroes + color * 360)
-        hero_array = array('I')
-        hero_array.frombytes(self.memory_file.read(4*8))
-        hero_array = [consts.hero_ids[i] for i in hero_array if i < 256]
+        with self.rw_lock:
+            self.memory_file.seek(self.players_array + consts.player_heroes + color * 360)
+            hero_array = array('I')
+            hero_array.frombytes(self.memory_file.read(4*8))
+            hero_array = [consts.hero_ids[i] for i in hero_array if i < 256]
 
-        self.memory_file.seek(self.players_array + consts.player_resources + color * 360)
-        resource_array = array('i')
-        resource_array.frombytes(self.memory_file.read(4*7))
+            self.memory_file.seek(self.players_array + consts.player_resources + color * 360)
+            resource_array = array('i')
+            resource_array.frombytes(self.memory_file.read(4*7))
 
-        self.memory_file.seek(self.players_array + color * 360)
-        name = self.memory_file.read(21)
-        try:
-            name = name[:name.index(b"\x00")].decode("ascii")
-        except UnicodeDecodeError:
-            print(name)
-        return Player(color, hero_array, name, resource_array.tolist())
+            self.memory_file.seek(self.players_array + color * 360)
+            name = self.memory_file.read(21)
+            try:
+                name = name[:name.index(b"\x00")].decode("ascii")
+            except (UnicodeDecodeError, ValueError):
+                print(name)
+            return Player(color, hero_array, name, resource_array.tolist())
+
+    def set_resources(self, color: int, resources: List[int]):
+        with self.rw_lock:
+            self.memory_file.seek(self.players_array + consts.player_resources + color * 360)
+            resource_array = array('i', resources)
+            self.memory_file.write(resource_array.tobytes())
 
 
     def get_hero_locations(self):
@@ -116,7 +128,7 @@ class H3editor:
         with open(join(proc, "maps")) as f:
             for line in f:
                 heap_start, heap_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
-                if not line.strip().startswith("0") or heap_start > 0x5_000_000 or heap_end < 0x3_000_000:
+                if not line.strip().startswith("0") or heap_start > 0x9_000_000 or heap_end < 0x1_000_000:
                     continue
                 try:
                     self.memory_file.seek(heap_start)
@@ -125,13 +137,15 @@ class H3editor:
                         for i in finditer(b"(\x06\x00\x0b\x00.\x00\x75\x80([\x00-\x08]{29}))", mem,
                                           flags=MULTILINE | DOTALL):
                             slots.append(i.span(2)[0] + heap_start)
+                        if heap_start > 0x5_000_000:
+                            continue
                         for i in finditer(
-                                b"([\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00)[\x00-\x15]\x00{3}(.).[\x00\xff]{1,3}.[\x00\xff]{1,3}[\x00\x01\xff][\x00\xff])",
+                                b"((.)\x00{3}.{4}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00)[\x00-\x15]\x00{3}(.).[\x00\xff]{1,3}.[\x00\xff]{1,3}[\x00\x01\xff][\x00\xff])",
                                 mem, flags=MULTILINE | DOTALL):
-                            if i.groups()[1].strip(b'\x00').decode().strip() not in consts.hero_names:
+                            if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_names or consts.hero_ids[i.groups()[1][0]] != i.groups()[2].strip(b'\x00').decode():
                                 continue
                             main_memory.append(
-                                (i.groups()[1].strip(b'\x00').decode("ascii"), i.span(2)[0] + heap_start))
+                                (i.groups()[2].strip(b'\x00').decode("ascii"), i.span(3)[0] + heap_start))
                 except IOError:
                     continue
         if len(main_memory) != len(slots) or len(slots) != 198:
@@ -149,48 +163,68 @@ class H3editor:
                               range(len(slots))}
 
     def get_skills(self, name):
-        if name not in self.mem_locations:
-            raise KeyError(name)
+        with self.rw_lock:
+            if name not in self.mem_locations:
+                raise KeyError(name)
 
-        self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills)
-        levels = self.memory_file.read(29)
-        self.memory_file.seek(self.mem_locations[name].slots)
-        slots = self.memory_file.read(29)
+            self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills)
+            levels = self.memory_file.read(29)
+            self.memory_file.seek(self.mem_locations[name].slots)
+            slots = self.memory_file.read(29)
 
-        for id, (slot, lvl) in enumerate(zip(slots, levels)):
-            if lvl:
-                yield Skill(id, lvl, slot)
+            for id, (slot, lvl) in enumerate(zip(slots, levels)):
+                if lvl:
+                    yield Skill(id, lvl, slot)
+
+    def get_primary_skills(self, name):
+        with self.rw_lock:
+            if name not in self.mem_locations:
+                raise KeyError(name)
+
+            self.memory_file.seek(self.mem_locations[name].main + consts.primary_skills)
+            levels = self.memory_file.read(4)
+            return list(levels)
+
+    def set_primary_skills(self, name: str, levels: List[int]):
+        with self.rw_lock:
+            if name not in self.mem_locations:
+                raise KeyError(name)
+
+            self.memory_file.seek(self.mem_locations[name].main + consts.primary_skills)
+            self.memory_file.write(bytes(levels))
 
     def get_team(self, name):
-        if name not in self.mem_locations:
-            raise KeyError(name)
+        with self.rw_lock:
+            if name not in self.mem_locations:
+                raise KeyError(name)
 
-        self.memory_file.seek(self.mem_locations[name].main + consts.affiliation)
-        return self.memory_file.read(1)[0]
+            self.memory_file.seek(self.mem_locations[name].main + consts.affiliation)
+            return self.memory_file.read(1)[0]
 
     def set_skills(self, name, skills):
-        if name not in self.mem_locations:
-            raise KeyError(name)
+        with self.rw_lock:
+            if name not in self.mem_locations:
+                raise KeyError(name)
 
-        if len(skills) > 8:
-            raise IndexError("Too many skills")
+            if len(skills) > 8:
+                raise IndexError("Too many skills")
 
-        if len({i.slot for i in skills}) != len(skills):
-            raise IndexError("Doubled skill slot")
+            if len({i.slot for i in skills}) != len(skills):
+                raise IndexError("Doubled skill slot")
 
-        self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills)
-        self.memory_file.write(b'\x00' * 29)
-        self.memory_file.seek(self.mem_locations[name].slots)
-        self.memory_file.write(b'\x00' * 29)
+            self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills)
+            self.memory_file.write(b'\x00' * 29)
+            self.memory_file.seek(self.mem_locations[name].slots)
+            self.memory_file.write(b'\x00' * 29)
 
-        self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skill_count)
-        self.memory_file.write(len(skills).to_bytes(1, byteorder='little'))
+            self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skill_count)
+            self.memory_file.write(len(skills).to_bytes(1, byteorder='little'))
 
-        for skill in skills:
-            self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills + skill.id)
-            self.memory_file.write(skill.lvl.to_bytes(1, byteorder='little'))
-            self.memory_file.seek(self.mem_locations[name].slots + skill.id)
-            self.memory_file.write(skill.slot.to_bytes(1, byteorder='little'))
+            for skill in skills:
+                self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills + skill.id)
+                self.memory_file.write(skill.lvl.to_bytes(1, byteorder='little'))
+                self.memory_file.seek(self.mem_locations[name].slots + skill.id)
+                self.memory_file.write(skill.slot.to_bytes(1, byteorder='little'))
 
 # 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00
 # 06 00 0B 00 ?? 00 75 80

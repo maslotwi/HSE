@@ -8,8 +8,33 @@ th {
     text-align: center;
 }
 
+img {
+    padding-right: 0.25em;
+}
+
 .levelEdit {
     width: 2em;
+}
+
+.resource {
+    width: 3em;
+}
+
+.gold {
+    width: 6em;
+}
+
+.resetContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.resetContainer button {
+    font-size: 5em;
+    width: 100%;
+    padding-top: 2.5em;
+    padding-bottom: 2.5em;
 }
 
 .player1 {
@@ -63,4 +88,28 @@ th {
 }
 .player256 {
     background-color: white;
+}
+
+.loadingBox {
+    background-color: rgba(105, 105, 105, 0.9);
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1em;
+    border-radius: 0.5em;
+}
+
+.loading {
+    border: 1em solid lightgray; /* Light grey */
+    border-top: 1em solid blueviolet; /* Blue */
+    border-radius: 50%;
+    width: 5em;
+    height: 5em;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

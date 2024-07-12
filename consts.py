@@ -232,6 +232,7 @@ hero_ids = ('Orrin', 'Valeska', 'Edric', 'Sylvia', 'Lord Haart', 'Sorsha', 'Chri
 
 skill_names = {y: x for x, y in skill_ids.items()}
 
+primary_skills = 1107
 secondary_skill_count = 222
 secondary_skills = 166
 affiliation = -1
