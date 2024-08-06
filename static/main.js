@@ -143,5 +143,28 @@ async function possess(name) {
         return
     }
     alert("Falied to update hero.")
+}
+
+async function tavern(color){
+    let slot1 = document.getElementById("tavern1").value;
+    let slot2 = document.getElementById("tavern2").value;
+
+    const response = await fetch("/tavern", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            color: color,
+            slot1: slot1,
+            slot2: slot2,
+        }),
+    });
+    if (response.ok) {
+        document.getElementById("mainTable").innerHTML = await response.text();
+        alert("Hero updated successfully.");
+        return
+    }
+    alert("Falied to update hero.")
 
 }

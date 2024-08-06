@@ -47,6 +47,7 @@ def players_html():
         for j, amnt in enumerate(i.resources[:-1]):
             table += f"<td><img src='/static/resources/res{j + 1}.png'><input autocomplete='off' id='r{i.color}{j}' value='{amnt}' class='resource' type='number' min='0'></input></td>"
         table += f"<td><img src='/static/resources/res{7}.png'><input autocomplete='off' id='r{i.color}6' value='{i.resources[-1]}' class='gold' type='number' min='0'></input></td>"
+        table += f"<td><a class='player{i.color + 1}' href='/tavern/{i.color}'>Tavern</a></td>"
         table += "</tr>"
     return table
 
@@ -87,6 +88,21 @@ def possession_html(name):
     w += f"</select></td></tr><tr><td colspan='3'><button onclick='possess(\"{name}\")'>save</button></td></tr>"
     return w
 
+def tavern_html(color):
+    w = f"<tr><th colspan='2' class='player{color + 1}'>Tavern</th></tr><tr>"
+    used_heroes = []
+    for i in range(8):
+        used_heroes += editor.get_player(i).heroes
+    for nr, hero in enumerate(editor.get_tavern(color)):
+        hero = consts.hero_ids[hero]
+        w += f"<td><select id='tavern{nr + 1}' autocomplete='off'>"
+        for i in sorted(consts.hero_ids):
+            if i not in used_heroes:
+                w += f"<option value='{i}' {'selected' if i == hero else ''}>{i}</option>"
+        w += "</select></td>"
+    w += f"</tr><tr><td colspan='2'><button onclick='tavern({color})'>save</button></td></tr>"
+    return w
+
 @app.route('/')
 def index():
     if editor.PID is None:
@@ -103,6 +119,19 @@ def edit(hero):
         return redirect("/")
     return render_template("edit_hero.html", tab=skills_html(hero), army=army_html(hero),
                            teleport=teleport_html(hero), possess=possession_html(hero))
+
+@app.route('/tavern/<color>', methods=["GET"])
+def tavern(color):
+    if editor.PID is None:
+        return redirect("/")
+    return render_template("tavern.html", tab=tavern_html(int(color)))
+
+@app.route('/tavern', methods=["POST"])
+def edit_tavern():
+    if editor.PID is None:
+        return Response(status=503)
+    editor.set_tavern(int(request.json["color"]), consts.hero_ids.index(request.json["slot1"]), consts.hero_ids.index(request.json["slot2"]))
+    return tavern_html(int(request.json["color"]))
 
 
 @app.route("/save", methods=['POST'])

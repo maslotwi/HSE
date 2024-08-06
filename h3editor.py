@@ -329,6 +329,14 @@ class H3editor:
             self.memory_file.seek(self.mem_locations[name].main + consts.coordinates)
             self.memory_file.write(array("h", [x, y, underground]).tobytes())
 
+    def get_tavern(self, color: int):
+        return self.dereference(self.players_array + consts.player_tavern + color * 360, "ii")
+
+    def set_tavern(self, color: int, tavern1: int, tavern2: int):
+        with self.rw_lock:
+            self.memory_file.seek(self.players_array + consts.player_tavern + color * 360)
+            self.memory_file.write(array("i", [tavern1, tavern2]).tobytes())
+
 
 
 # 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00

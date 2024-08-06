@@ -455,6 +455,7 @@ player_hero_count = player_color + 1
 player_heroes = player_color + 8
 player_resources = -48
 player_selected_town = -9*16+3
+player_tavern = player_heroes + 8 * 4
 
 game_manager_address = 0x699538
 adventure_manager_address = 0x6992B8
