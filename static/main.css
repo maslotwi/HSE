@@ -4,7 +4,7 @@ table, th, td {
     padding: 0.5em;
 }
 
-th {
+th, .tickbox {
     text-align: center;
 }
 
@@ -112,4 +112,8 @@ img {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.addSpace {
+    margin-bottom: 2em;
 }
