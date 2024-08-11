@@ -201,39 +201,39 @@ def compare_skills(skills, slots):
 
 if __name__ == '__main__':
     editor = H3editor()
-    print(editor.mem_locations['Orrin'])
-    editor.memory_file.seek(0x6992B8)
-    from array import array
-    x =array("i")
-    x.frombytes(editor.memory_file.read(4))
-    editor.memory_file.seek(x[0]+0x5c)
-    x.frombytes(editor.memory_file.read(4))
-    editor.memory_file.seek(x[1] + 0xD0)
-    x.frombytes(editor.memory_file.read(4))
-
-    editor.memory_file.seek(0x699538)
-    x.frombytes(editor.memory_file.read(4))
-    editor.memory_file.seek(x[-1] + 0x21614)
-    x.frombytes(editor.memory_file.read(4))
-    print(hex(x[-1]), hex(editor.dereference(editor.dereference(0x699538)+0x21614))) #12 10 00 FF FF
-                                                                #03 11 00 FF FF
-    print(x)
-
-    # data = editor.memory_file.read(0x168*16)
-    # for i in range(0, len(data), 16*10):
-    #     for j in range(10):
-    #         print(*(f"{hex(i).upper()[2:]:0>2}" for i in data[j*16+i:j*16+i+16]), data[j*16+i:j*16+i+16])
-    #     print()
+    # print(editor.mem_locations['Orrin'])
+    # editor.memory_file.seek(0x6992B8)
+    # from array import array
+    # x =array("i")
+    # x.frombytes(editor.memory_file.read(4))
+    # editor.memory_file.seek(x[0]+0x5c)
+    # x.frombytes(editor.memory_file.read(4))
+    # editor.memory_file.seek(x[1] + 0xD0)
+    # x.frombytes(editor.memory_file.read(4))
+    #
+    # editor.memory_file.seek(0x699538)
+    # x.frombytes(editor.memory_file.read(4))
+    # editor.memory_file.seek(x[-1] + 0x21614)
+    # x.frombytes(editor.memory_file.read(4))
+    # print(hex(x[-1]), hex(editor.dereference(editor.dereference(0x699538)+0x21614))) #12 10 00 FF FF
+    #                                                             #03 11 00 FF FF
     # print(x)
-    # print()
-    #print(data)
-    #print(sum(data))
-    import struct
-    print(hex(editor.town_array))
-    miasto = Town(*editor.dereference(editor.town_array, consts.town_struct))
-    print(miasto)
-    print(editor.get_location("Clancy"))
-    print(editor.get_location("Clancy"))
+    #
+    # # data = editor.memory_file.read(0x168*16)
+    # # for i in range(0, len(data), 16*10):
+    # #     for j in range(10):
+    # #         print(*(f"{hex(i).upper()[2:]:0>2}" for i in data[j*16+i:j*16+i+16]), data[j*16+i:j*16+i+16])
+    # #     print()
+    # # print(x)
+    # # print()
+    # #print(data)
+    # #print(sum(data))
+    # import struct
+    # print(hex(editor.town_array))
+    # miasto = Town(*editor.dereference(editor.town_array, consts.town_struct))
+    # print(miasto)
+    # print(editor.get_location("Clancy"))
+    # print(editor.get_location("Clancy"))
 
     app.run(port=80, host='0.0.0.0')
 
