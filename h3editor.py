@@ -332,7 +332,36 @@ class H3editor:
     def get_tavern(self, color: int):
         return self.dereference(self.players_array + consts.player_tavern + color * 360, "ii")
 
+    def get_safe_hero(self, n: int = 0) -> str | None:
+        taken_heroes = set(consts.campaign_heroes)
+        for i in range(8):
+            taken_heroes |= set(self.get_player(i).heroes)
+        safe_heroes = set(consts.hero_ids) - taken_heroes
+
+        # attempt to get a new hero
+        for name in safe_heroes:
+            if self.dereference(self.mem_locations[name].main + consts.xp_offset, "h") == 1:
+                if n == 0:
+                    return name
+                n -= 1
+        # pray there was no prison break
+        for name in safe_heroes:
+            if n == 0:
+                return name
+            n -= 1
+        return None
+
     def set_tavern(self, color: int, tavern1: int, tavern2: int):
+        offset = 0
+        for player in (i for i in range(8) if i != color):
+            safe = set(self.get_tavern(player)) - {tavern1, tavern2}
+            for _ in range(2-len(safe)):
+                safe.add(consts.hero_ids.index(self.get_safe_hero(offset)))
+                offset += 1
+            self.set_tavern_unsafe(player, *safe)
+        self.set_tavern_unsafe(color, tavern1, tavern2)
+
+    def set_tavern_unsafe(self, color: int, tavern1: int, tavern2: int):
         with self.rw_lock:
             self.memory_file.seek(self.players_array + consts.player_tavern + color * 360)
             self.memory_file.write(array("i", [tavern1, tavern2]).tobytes())

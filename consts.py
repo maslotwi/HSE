@@ -435,6 +435,11 @@ hero_ids = (
     'Giselle', 'Henrietta', 'Sam', 'Tancred', 'Melchior', 'Floribert', 'Wynona', 'Dury', 'Morton', 'Celestine', 'Todd',
     'Agar', 'Bertram', 'Wrathmont', 'Ziph', 'Victoria', 'Eanswythe', 'Frederick', 'Tavin', 'Murdoch')
 
+campaign_heroes = ('Catherine', 'Roland', 'Gelu', 'Dracon', 'Xeron', 'Haart Lich', 'Mutare', 'Mutare Drake', 'Boragus',
+                   'Kilgor', 'Adrienne', 'Bidley', 'Tark', 'Tavin', 'Murdoch', 'Frederick')
+
+campaign_hero_ids = [hero_ids.index(i) for i in campaign_heroes]
+
 colors = ("Red", "Blue", "Tan", "Green", "Orange", "Purple", "Teal", "Pink")
 
 skill_names = {y: x for x, y in skill_ids.items()}
@@ -445,6 +450,7 @@ secondary_skill_count = 222
 secondary_skills = 166
 affiliation = -1
 coordinates = -35
+xp_offset = coordinates + 85
 
 troop_id_array = 110
 troop_count_array = 138
