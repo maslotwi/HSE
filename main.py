@@ -8,7 +8,6 @@ app = Flask(__name__)
 
 def skills_html(name):
     skills = editor.get_skills(name)
-
     dropdown_options = "<option value='' selected></option>"
     for i in sorted(consts.skill_ids):
         dropdown_options += f"<option value='{i}'>{i}</option>"
@@ -31,6 +30,10 @@ def skills_html(name):
     w += "<tr>"
     for i, level in enumerate(editor.get_primary_skills(name)):
         w += f"<td><input class='resource' autocomplete='off' min='0' type='number' value='{level}' id='primary{i}'></input></td>"
+    # for no, i in enumerate(consts.hero_ids):
+    #     msg = f"{no} {i} {list(editor.get_skills(i))}"
+    #     print(msg.ljust(100), editor.dereference(editor.mem_locations[i].main + consts.secondary_skills, "b"*29),
+    #           editor.dereference(editor.mem_locations[i].slots, "b"*29))
     return w + f'</tr><tr><td colspan="4"><button onclick="save_hero(\'{name}\')">save</button></td></tr>'
 
 
