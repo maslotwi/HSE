@@ -1,0 +1,19 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+<table class="addSpace"><tbody id="mainTable">
+{{ tab|safe }}
+</tbody></table>
+
+<table class="addSpace"><tbody id="armyTable">
+{{ army|safe }}
+</tbody></table>
+
+<table class="addSpace"><tbody id="teleportTable">
+{{ teleport|safe }}
+</tbody></table>
+
+<table class="addSpace"><tbody id="possessTable">
+{{ possess|safe }}
+</tbody></table>
+{% endblock %}

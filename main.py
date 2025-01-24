@@ -96,6 +96,7 @@ def tavern_html(color):
     used_heroes = []
     for i in range(8):
         used_heroes += editor.get_player(i).heroes
+        used_heroes += editor.get_tavern(i)
     for nr, hero in enumerate(editor.get_tavern(color)):
         hero = consts.hero_ids[hero]
         w += f"<td><select id='tavern{nr + 1}' autocomplete='off'>"
@@ -109,25 +110,27 @@ def tavern_html(color):
 @app.route('/')
 def index():
     if editor.PID is None:
-        return render_template("start_editor.html")
+        return render_template("start_editor.jinja2")
 
     table = players_html()
 
-    return render_template("index.html", tabela=table)
+    return render_template("index.jinja2", tabela=table)
 
 
 @app.route('/edit/<hero>')
 def edit(hero):
     if editor.PID is None:
         return redirect("/")
-    return render_template("edit_hero.html", tab=skills_html(hero), army=army_html(hero),
+    if editor.hero_loader.is_alive():
+        return render_template("unavailable.jinja2", progress=f"{editor.hero_loader_progress*100:.2f}")
+    return render_template("edit_hero.jinja2", tab=skills_html(hero), army=army_html(hero),
                            teleport=teleport_html(hero), possess=possession_html(hero))
 
 @app.route('/tavern/<color>', methods=["GET"])
 def tavern(color):
     if editor.PID is None:
         return redirect("/")
-    return render_template("tavern.html", tab=tavern_html(int(color)))
+    return render_template("tavern.jinja2", tab=tavern_html(int(color)))
 
 @app.route('/tavern', methods=["POST"])
 def edit_tavern():

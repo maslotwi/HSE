@@ -2,16 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta content="/static/favicon-128.png" itemprop="image">
     <link rel="icon" type="image/png" href="/static/favicon-32.png">
     <link rel="stylesheet" href="/static/main.css">
     <title>H3 editor</title>
 </head>
 <body>
-<div class="resetContainer">
-    <button onclick="reset_editor()">Launch<br>editor</button>
-</div>
+    {% block content %}{% endblock %}
 <script src="/static/main.js"></script>
 </body>
 </html>

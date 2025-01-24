@@ -2,17 +2,25 @@ import struct
 import subprocess
 import consts
 import collections
+import time
 from dataclasses import dataclass
 from os.path import join
 from re import search, MULTILINE, finditer, DOTALL
 from typing import List
 from array import array
-from threading import Lock
-
+from threading import Lock, Thread
 
 class ProcessNotFound(Exception):
     pass
 
+
+class FakeThread:
+    def __init__(self):
+        pass
+    def join(self):
+        return True
+    def is_alive(self):
+        return True
 
 @dataclass(frozen=True, order=True)
 class Skill:
@@ -55,9 +63,12 @@ class H3editor:
         slots: int
 
     def __init__(self, process_name="h3hota HD.exe"):
-        self.hero_location_neighbourhood = None
-        self.process_name = process_name
-        self.rw_lock = Lock()
+        self.hero_loader: Thread | None = None
+        self.hero_loader_progress: float = 0.
+        self.hero_location_neighbourhood: int | None = None
+        self.slots_location_neighbourhood: int | None = None
+        self.process_name: str = process_name
+        self.rw_lock: Lock = Lock()
         self.PID = None
         self.memory_file = None
         self.mem_locations = None
@@ -67,12 +78,14 @@ class H3editor:
         self.get_PID()
         if self.PID is not None:
             self.open_memory_file()
-            with self.rw_lock:
-                with open("cache") as f:
-                    data = f.read().splitlines()
-                    self.hero_location_neighbourhood = int(data[0], base=16)
-                    self.slots_location_neighbourhood = int(data[1], base=16)
-                self.get_hero_locations()
+            with open("cache") as f:
+                data = f.read().splitlines()
+                self.hero_location_neighbourhood = int(data[0], base=16)
+                self.slots_location_neighbourhood = int(data[1], base=16)
+            if self.hero_loader is not None and self.hero_loader.is_alive():
+                self.hero_loader.join()
+            self.hero_loader = Thread(target=self.get_hero_locations)
+            self.hero_loader.start()
             self.get_managers()
             self.get_game_map()
             self.get_player_locations()
@@ -146,21 +159,31 @@ class H3editor:
             self.memory_file.write(resource_array.tobytes())
 
     def get_hero_locations(self):
+        begin = time.time()
+
         slots = []
         main_memory = []
         proc = join("/proc", str(self.PID))
-
+        with (open(join(proc, "maps")) as f):
+            for line in f:
+                _, max_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
         with (open(join(proc, "maps")) as f):
             for line in f:
                 heap_start, heap_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
-                if (heap_start > self.hero_location_neighbourhood + 0x1_000_000 or heap_end < self.hero_location_neighbourhood - 0x1_000_000) and \
-                    (heap_start > self.slots_location_neighbourhood + 0x2_000_000 or heap_end < self.slots_location_neighbourhood - 0x2_000_000):
+                # if (heap_start > self.hero_location_neighbourhood + 0x1_000_000 or heap_end < self.hero_location_neighbourhood - 0x1_000_000) and \
+                #     (heap_start > self.slots_location_neighbourhood + 0x2_000_000 or heap_end < self.slots_location_neighbourhood - 0x2_000_000):
+                #     continue
+                if heap_end - heap_start > 1_800_000_000:
                     continue
 
-
                 try:
-                    self.memory_file.seek(heap_start)
-                    mem = self.memory_file.read(heap_end - heap_start)
+
+                    with self.rw_lock:
+                        self.memory_file.seek(heap_start)
+                        mem = self.memory_file.read(heap_end - heap_start)
+                    self.hero_loader_progress = heap_start/max_end
+                    print(heap_end - heap_start, self.hero_loader_progress)
+
 
                     # if search(b"(Brissa)|(\x06\x00\x0b\x00.\x00\x75\x80)", mem, flags=MULTILINE | DOTALL):
                     for i in finditer(b"(\x06\x00\x0b\x00.\x00\x75\x80([\x00-\x08]{29}))", mem,
@@ -181,7 +204,7 @@ class H3editor:
         if len(main_memory) != len(slots) or len(slots) != 198:
             print(main_memory)
             print(set(consts.hero_ids) - set(i[0] for i in main_memory))
-
+            self.hero_loader = FakeThread()
             raise IOError(f"Found {len(main_memory)} heroes and {len(slots)} slots")
         slots_2 = slots.copy()
         for i in range(163):
@@ -189,8 +212,11 @@ class H3editor:
 
         self.mem_locations = {main_memory[i][0]: self.HeroLocation(main_memory[i][1], slots[i]) for i in
                               range(len(slots))}
+        print("finished in ", (time.time() - begin))
 
     def get_skills(self, name):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -205,6 +231,8 @@ class H3editor:
                     yield Skill(id, lvl, slot)
 
     def set_skills(self, name, skills):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -230,6 +258,8 @@ class H3editor:
                 self.memory_file.write(skill.slot.to_bytes(1, byteorder='little'))
 
     def get_primary_skills(self, name):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -239,6 +269,8 @@ class H3editor:
             return list(levels)
 
     def set_primary_skills(self, name: str, levels: List[int]):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -247,6 +279,8 @@ class H3editor:
             self.memory_file.write(bytes(levels))
 
     def get_team(self, name):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -255,6 +289,8 @@ class H3editor:
             return self.memory_file.read(1)[0]
 
     def get_troops(self, name):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -270,6 +306,8 @@ class H3editor:
             return [Troop(id, amnt) for id, amnt in zip(ids, counts)]
 
     def set_troops(self, name: str, troops: List[Troop]):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -288,6 +326,8 @@ class H3editor:
             self.memory_file.write(counts.tobytes())
 
     def set_location(self, name, x: int, y: int, underground: bool = False):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -299,6 +339,8 @@ class H3editor:
             self.memory_file.write(coords.tobytes())
 
     def get_location(self, name):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -325,6 +367,8 @@ class H3editor:
         return Town(*self.dereference(self.town_array + 360 * id, consts.town_struct))
 
     def possess(self, name: str, original_team: int, team: int, x: int, y: int, underground: bool = False):
+        if self.hero_loader.is_alive():
+            return None
         with self.rw_lock:
             if name not in self.mem_locations:
                 raise KeyError(name)
@@ -338,11 +382,15 @@ class H3editor:
         return self.dereference(self.players_array + consts.player_tavern + color * 360, "ii")
 
     def get_safe_hero(self, n: int = 0) -> str | None:
+        if self.hero_loader.is_alive():
+            return None
         taken_heroes = set(consts.campaign_heroes)
         for i in range(8):
             taken_heroes |= set(self.get_player(i).heroes)
+            taken_heroes |= set(self.get_tavern(i)) # TODO: delete after fixing hero finder
         safe_heroes = set(consts.hero_ids) - taken_heroes
-
+        if self.hero_loader.is_alive():
+            return list(safe_heroes)[n]
         # attempt to get a new hero
         for name in safe_heroes:
             if self.dereference(self.mem_locations[name].main + consts.xp_offset, "h") == 1:

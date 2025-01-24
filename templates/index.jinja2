@@ -1,0 +1,10 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+<table><tbody>
+    {{ tabela|safe }}
+</tbody></table>
+
+<button onclick="save_res()">save</button>
+<button onclick="reset_editor()">restart editor</button>
+{% endblock %}
