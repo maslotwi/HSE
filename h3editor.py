@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from os.path import join
 from re import search, MULTILINE, finditer, DOTALL
-from typing import List
+from typing import List, Tuple
 from array import array
 from threading import Lock, Thread
 
@@ -158,16 +158,74 @@ class H3editor:
             resource_array = array('i', resources)
             self.memory_file.write(resource_array.tobytes())
 
+    @staticmethod
+    def __resolve_duplicates(hero_locs: List[Tuple[str, int]]) -> List[int]:
+        names = {i[0]:list() for i in hero_locs}
+        for i, (name, loc) in enumerate(hero_locs):
+            names[name].append(i)
+
+        duplicates = [name for name in names if len(names[name]) != 1]
+
+        delete_list = []
+
+        for name in duplicates:
+            keep_id = 0
+            mean_distance = float("inf")
+            for index in names[name]:
+                dist_sum = 0
+                for _, loc in hero_locs:
+                    dist_sum += abs(loc - hero_locs[index][1])
+                if dist_sum < mean_distance:
+                    mean_distance = dist_sum
+                    keep_id = index
+            for index in names[name]:
+                if index != keep_id:
+                    delete_list.append(index)
+
+        return delete_list
+
+    def __cmp_n_back(self, position, n, sl, hr) -> bool:
+        for i in range(n):
+            n_slot = self.dereference(sl[position-i-1], "B"*consts.total_secondary_skill_count)
+            n_hero = self.dereference(hr[position-i-1][1]+consts.secondary_skills, "B"*consts.total_secondary_skill_count)
+            for j in range(consts.total_secondary_skill_count):
+                if (n_hero[j] == 0 and n_slot[j] != 0) or (n_hero[j] != 0 and n_slot[j] == 0):
+                    return False
+        return True
+
+
+    def __rotate_slots(self, original_slots: List[int], hero_mem: List[Tuple[str,int]]) -> List[int]:
+        result = original_slots.copy()
+
+        first_okay = len(original_slots) - 1
+        while first_okay > 6:
+            if self.__cmp_n_back(first_okay, 1, result, hero_mem):
+                first_okay -= 1
+                continue
+            rot_attempt = 0
+            while not self.__cmp_n_back(first_okay, 5, result, hero_mem):
+                if rot_attempt == first_okay:
+                    first_okay -= 1
+                    rot_attempt = 0
+                slots_2 = result.copy()
+                for i in range(first_okay):
+                    result[i] = slots_2[(i + 1) % first_okay]
+                rot_attempt += 1
+
+
+
+        return result
+
     def get_hero_locations(self):
         begin = time.time()
 
         slots = []
         main_memory = []
         proc = join("/proc", str(self.PID))
-        with (open(join(proc, "maps")) as f):
+        with open(join(proc, "maps")) as f:
             for line in f:
                 _, max_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
-        with (open(join(proc, "maps")) as f):
+        with open(join(proc, "maps")) as f:
             for line in f:
                 heap_start, heap_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
                 # if (heap_start > self.hero_location_neighbourhood + 0x1_000_000 or heap_end < self.hero_location_neighbourhood - 0x1_000_000) and \
@@ -182,7 +240,7 @@ class H3editor:
                         self.memory_file.seek(heap_start)
                         mem = self.memory_file.read(heap_end - heap_start)
                     self.hero_loader_progress = heap_start/max_end
-                    print(heap_end - heap_start, self.hero_loader_progress)
+                    # print(str(heap_end - heap_start).ljust(20), self.hero_loader_progress)
 
 
                     # if search(b"(Brissa)|(\x06\x00\x0b\x00.\x00\x75\x80)", mem, flags=MULTILINE | DOTALL):
@@ -197,22 +255,43 @@ class H3editor:
                         if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_names or \
                                 consts.hero_ids[i.groups()[1][0]] != i.groups()[2].strip(b'\x00').decode():
                             continue
+                        table_loc = i.span(3)[0]
+                        if mem[table_loc + consts.secondary_skill_count] \
+                            != sum((mem[table_loc+consts.secondary_skills+i] and 1)
+                                   for i in range(consts.total_secondary_skill_count)):
+                            continue
                         main_memory.append(
-                            (i.groups()[2].strip(b'\x00').decode("ascii"), i.span(3)[0] + heap_start))
+                            (i.groups()[2].strip(b'\x00').decode("ascii"), table_loc + heap_start))
                 except IOError:
                     continue
+
+
+        main_memory = [main_memory[i] for i in range(len(main_memory)) if i not in self.__resolve_duplicates(main_memory)]
         if len(main_memory) != len(slots) or len(slots) != 198:
             print(main_memory)
             print(set(consts.hero_ids) - set(i[0] for i in main_memory))
             self.hero_loader = FakeThread()
             raise IOError(f"Found {len(main_memory)} heroes and {len(slots)} slots")
-        slots_2 = slots.copy()
-        for i in range(163):
-            slots[i] = slots_2[(i - 156) % 163]
+
+        slots = self.__rotate_slots(slots, main_memory)
+
+        # slots_2 = slots.copy()
+        # for i in range(184):
+        #     slots[i] = slots_2[(i + 21) % 184]
+        #
+        # slots_2 = slots.copy()
+        # for i in range(163):
+        #     slots[i] = slots_2[(i + 7) % 163]
+        #
+        # slots_2 = slots.copy()
+        # for i in range(58):
+        #     slots[i] = slots_2[(i + 31) % 58]
 
         self.mem_locations = {main_memory[i][0]: self.HeroLocation(main_memory[i][1], slots[i]) for i in
                               range(len(slots))}
-        print("finished in ", (time.time() - begin))
+        # for name, heroloc in self.mem_locations.items():
+        #     print(str(consts.hero_ids.index(name)).rjust(5), name.ljust(20), self.dereference(heroloc.main+consts.secondary_skills, "B"*29), self.dereference(heroloc.slots, "B"*29))
+        print("finished in", (time.time() - begin))
 
     def get_skills(self, name):
         if self.hero_loader.is_alive():
