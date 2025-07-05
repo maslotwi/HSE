@@ -211,10 +211,14 @@ class H3editor:
                 for i in range(first_okay):
                     result[i] = slots_2[(i + 1) % first_okay]
                 rot_attempt += 1
-
-
-
         return result
+
+    def __is_permutation(self, slot: bytes) -> bool:
+        non_zero = [i for i in slot if i != 0]
+        for i, val in enumerate(sorted(non_zero)):
+            if i+1 != val:
+                return False
+        return True
 
     def get_hero_locations(self):
         begin = time.time()
@@ -246,7 +250,9 @@ class H3editor:
                     # if search(b"(Brissa)|(\x06\x00\x0b\x00.\x00\x75\x80)", mem, flags=MULTILINE | DOTALL):
                     for i in finditer(b"(\x06\x00\x0b\x00.\x00\x75\x80([\x00-\x08]{29}))", mem,
                                       flags=MULTILINE | DOTALL):
-                        slots.append(i.span(2)[0] + heap_start)
+
+                        if self.__is_permutation(i.group(2)):
+                            slots.append(i.span(2)[0] + heap_start)
                     # if heap_start > 0x6_000_000:
                     #     continue
                     for i in finditer(
@@ -268,6 +274,7 @@ class H3editor:
 
         main_memory = [main_memory[i] for i in range(len(main_memory)) if i not in self.__resolve_duplicates(main_memory)]
         if len(main_memory) != len(slots) or len(slots) != 198:
+            print(slots)
             print(main_memory)
             print(set(consts.hero_ids) - set(i[0] for i in main_memory))
             self.hero_loader = FakeThread()
