@@ -226,9 +226,15 @@ class H3editor:
         slots = []
         main_memory = []
         proc = join("/proc", str(self.PID))
+
+        total_memory = 0
+        total_memory_searched = 0
+
         with open(join(proc, "maps")) as f:
             for line in f:
-                _, max_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
+                start, end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
+                total_memory += end - start
+
         with open(join(proc, "maps")) as f:
             for line in f:
                 heap_start, heap_end = map(lambda x: int(x, base=16), line.split()[0].split('-'))
@@ -237,29 +243,35 @@ class H3editor:
                 #     continue
                 if heap_end - heap_start > 1_800_000_000:
                     continue
+                if heap_end >= 0x600_000_000_000:
+                    continue
 
                 try:
 
                     with self.rw_lock:
                         self.memory_file.seek(heap_start)
                         mem = self.memory_file.read(heap_end - heap_start)
-                    self.hero_loader_progress = heap_start/max_end
                     # print(str(heap_end - heap_start).ljust(20), self.hero_loader_progress)
 
 
                     # if search(b"(Brissa)|(\x06\x00\x0b\x00.\x00\x75\x80)", mem, flags=MULTILINE | DOTALL):
-                    for i in finditer(b"(\x06\x00\x0b\x00.\x00\x75\x80([\x00-\x08]{29}))", mem,
+                    for i in finditer(b"(\x06\x00\x0a\x00.\x00\x75\x80([\x00-\x08]{" + str(len(consts.skill_ids)).encode() + b"}))", mem,
                                       flags=MULTILINE | DOTALL):
+
 
                         if self.__is_permutation(i.group(2)):
                             slots.append(i.span(2)[0] + heap_start)
                     # if heap_start > 0x6_000_000:
                     #     continue
                     for i in finditer(
-                            b"((.)\x00{3}.{4}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00)[\x00-\x15]\x00{3}(.).[\x00\xff]{1,3}.[\x00\xff]{1,3}[\x00\x01\xff][\x00\xff])",
+                            #b"((.)\x00{3}.{4}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00).\x00{3}(.).[\x00\xff]{1,3}.[\x00\xff]{1,3}[\x00\x01\xff][\x00\xff])",
+                            b"((.).{7}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00).{4}(.))",
                             mem, flags=MULTILINE | DOTALL):
-                        if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_names or \
-                                consts.hero_ids[i.groups()[1][0]] != i.groups()[2].strip(b'\x00').decode():
+                        if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_ids or \
+                                consts.hero_ids[i.groups()[1][0]] != i.groups()[2].strip(b'\x00').decode().strip():
+                            # if i.groups()[2].strip(b'\x00').decode().strip() in consts.hero_ids:
+                            #     print(i.groups()[0])
+                            #     print(f"hero.ids[{i.groups()[1][0]}] == '{consts.hero_ids[i.groups()[1][0]]}' != '{i.groups()[2].strip(b'\x00').decode()}'")
                             continue
                         table_loc = i.span(3)[0]
                         if mem[table_loc + consts.secondary_skill_count] \
@@ -268,15 +280,18 @@ class H3editor:
                             continue
                         main_memory.append(
                             (i.groups()[2].strip(b'\x00').decode("ascii"), table_loc + heap_start))
+                    total_memory_searched += heap_end - heap_start
+                    self.hero_loader_progress = total_memory_searched / total_memory
+
                 except IOError:
                     continue
 
 
         main_memory = [main_memory[i] for i in range(len(main_memory)) if i not in self.__resolve_duplicates(main_memory)]
-        if len(main_memory) != len(slots) or len(slots) != 198:
+        if len(main_memory) != len(slots) or len(slots) != len(consts.hero_ids):
             print(slots)
             print(main_memory)
-            print(set(consts.hero_ids) - set(i[0] for i in main_memory))
+            print(set(consts.hero_ids) - set(i[0].strip() for i in main_memory))
             self.hero_loader = FakeThread()
             raise IOError(f"Found {len(main_memory)} heroes and {len(slots)} slots")
 
