@@ -268,10 +268,13 @@ class H3editor:
                             b"((.).{7}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00).{4}(.))",
                             mem, flags=MULTILINE | DOTALL):
                         if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_ids or \
-                                consts.hero_ids[i.groups()[1][0]] != i.groups()[2].strip(b'\x00').decode().strip():
+                                consts.hero_ids[i.groups()[0][0]] != i.groups()[2].strip(b'\x00').decode().strip():
                             # if i.groups()[2].strip(b'\x00').decode().strip() in consts.hero_ids:
                             #     print(i.groups()[0])
                             #     print(f"hero.ids[{i.groups()[1][0]}] == '{consts.hero_ids[i.groups()[1][0]]}' != '{i.groups()[2].strip(b'\x00').decode()}'")
+                            # else:
+                            # if b'Neia' in i.groups()[0]:
+                            #     print("found neia",i.groups()[0])
                             continue
                         table_loc = i.span(3)[0]
                         if mem[table_loc + consts.secondary_skill_count] \
@@ -527,3 +530,5 @@ class H3editor:
 
 # Most Hero Stats
 # FF FF FF FF FF FF 03 00 00 00 FF FF
+
+#C8 00 00 00 00 00 00 00 02 4E 65 69 61 00 00 00 00 00 00 00 00 00 16 00 00 00 E6

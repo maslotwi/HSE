@@ -272,7 +272,7 @@ troop_names = {y: x for x, y in troop_ids.items()}
 
 primary_skills = 1107
 secondary_skill_count = 222
-total_secondary_skill_count = 29
+total_secondary_skill_count = len(skill_ids)
 secondary_skills = 166
 affiliation = -1
 coordinates = -35
