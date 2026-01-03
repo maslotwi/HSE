@@ -267,7 +267,7 @@ class H3editor:
                             #b"((.)\x00{3}.{4}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00).\x00{3}(.).[\x00\xff]{1,3}.[\x00\xff]{1,3}[\x00\x01\xff][\x00\xff])",
                             b"((.).{7}[\x00-\x07\xff]([A-Z][a-z]{2}[A-Z a-z\x00]{9}\x00).{4}(.))",
                             mem, flags=MULTILINE | DOTALL):
-                        if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_ids or \
+                        if i.groups()[2].strip(b'\x00').decode().strip() not in consts.hero_ids or i.groups()[0][0] >= len(consts.hero_ids) or \
                                 consts.hero_ids[i.groups()[0][0]] != i.groups()[2].strip(b'\x00').decode().strip():
                             # if i.groups()[2].strip(b'\x00').decode().strip() in consts.hero_ids:
                             #     print(i.groups()[0])
@@ -326,9 +326,9 @@ class H3editor:
                 raise KeyError(name)
 
             self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills)
-            levels = self.memory_file.read(29)
+            levels = self.memory_file.read(consts.total_secondary_skill_count)
             self.memory_file.seek(self.mem_locations[name].slots)
-            slots = self.memory_file.read(29)
+            slots = self.memory_file.read(consts.total_secondary_skill_count)
 
             for id, (slot, lvl) in enumerate(zip(slots, levels)):
                 if lvl:
@@ -348,9 +348,9 @@ class H3editor:
                 raise IndexError("Doubled skill slot")
 
             self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skills)
-            self.memory_file.write(b'\x00' * 29)
+            self.memory_file.write(b'\x00' * consts.total_secondary_skill_count)
             self.memory_file.seek(self.mem_locations[name].slots)
-            self.memory_file.write(b'\x00' * 29)
+            self.memory_file.write(b'\x00' * consts.total_secondary_skill_count)
 
             self.memory_file.seek(self.mem_locations[name].main + consts.secondary_skill_count)
             self.memory_file.write(len(skills).to_bytes(1, byteorder='little'))
